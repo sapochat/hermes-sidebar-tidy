@@ -1,0 +1,298 @@
+{
+  "at": "2026-10-18T18:49:51.468Z",
+  "pass": 26,
+  "total": 26,
+  "env": {
+    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Hermes/0.0.0 Chrome/144.0.7559.236 Electron/40.10.2 Safari/537.36",
+    "url": "http://127.0.0.1:5194/#/capabilities?tab=plugins"
+  },
+  "results": [
+    {
+      "name": "plugin loaded: stylesheet injected and sections marked",
+      "ok": true,
+      "detail": {
+        "groups": {
+          "pinned": true,
+          "sessions": true,
+          "messaging:Photon": true,
+          "messaging:Discord": true,
+          "cron": true
+        },
+        "nav": {
+          "cron": true,
+          "new-session": true,
+          "capabilities": true,
+          "messaging": true,
+          "artifacts": true
+        },
+        "search": {
+          "shown": true,
+          "h": 37,
+          "mode": null
+        },
+        "marks": 7,
+        "style": true,
+        "peek": false
+      }
+    },
+    {
+      "name": "Pinned \"Always\": empty Pinned visible",
+      "ok": true,
+      "detail": {
+        "pinned": true,
+        "sessions": true,
+        "messaging:Photon": true,
+        "messaging:Discord": true,
+        "cron": true
+      }
+    },
+    {
+      "name": "Pinned \"When not empty\": hidden while empty",
+      "ok": true,
+      "detail": {
+        "pinned": false,
+        "sessions": true,
+        "messaging:Photon": true,
+        "messaging:Discord": true,
+        "cron": true
+      }
+    },
+    {
+      "name": "persisted to plugin storage",
+      "ok": true
+    },
+    {
+      "name": "Pinned \"When not empty\": shown once it has a row",
+      "ok": true,
+      "detail": {
+        "pinned": true,
+        "sessions": true,
+        "messaging:Photon": true,
+        "messaging:Discord": true,
+        "cron": true
+      }
+    },
+    {
+      "name": "Pinned \"When not empty\": hides again when the row goes",
+      "ok": true,
+      "detail": {
+        "pinned": false,
+        "sessions": true,
+        "messaging:Photon": true,
+        "messaging:Discord": true,
+        "cron": true
+      }
+    },
+    {
+      "name": "Pinned \"Hidden\"",
+      "ok": true
+    },
+    {
+      "name": "Cron jobs hidden; others intact",
+      "ok": true,
+      "detail": {
+        "pinned": false,
+        "sessions": true,
+        "messaging:Photon": true,
+        "messaging:Discord": true,
+        "cron": false
+      }
+    },
+    {
+      "name": "one platform (Photon) hidden, others shown",
+      "ok": true,
+      "detail": {
+        "pinned": false,
+        "sessions": true,
+        "messaging:Photon": false,
+        "messaging:Discord": true,
+        "cron": false
+      }
+    },
+    {
+      "name": "all messaging sections hidden",
+      "ok": true,
+      "detail": {
+        "pinned": false,
+        "sessions": true,
+        "messaging:Photon": false,
+        "messaging:Discord": false,
+        "cron": false
+      }
+    },
+    {
+      "name": "Sessions hidden",
+      "ok": true
+    },
+    {
+      "name": "search \"Keyboard only\": collapsed to 0 height",
+      "ok": true,
+      "detail": {
+        "shown": false,
+        "h": 0,
+        "mode": "keys"
+      }
+    },
+    {
+      "name": "search \"Keyboard only\": expands on focus",
+      "ok": true,
+      "detail": {
+        "shown": true,
+        "h": 37,
+        "mode": "keys"
+      }
+    },
+    {
+      "name": "nav: Artifacts hidden through sidebarNav.prefs (row unmounted)",
+      "ok": true,
+      "detail": {
+        "cron": true,
+        "new-session": true,
+        "capabilities": true,
+        "messaging": true
+      }
+    },
+    {
+      "name": "nav: Capabilities switch locked",
+      "ok": true
+    },
+    {
+      "name": "nav: reorder moves Scheduled jobs above Messaging",
+      "ok": true,
+      "detail": [
+        "cron",
+        "new-session",
+        "capabilities",
+        "messaging"
+      ]
+    },
+    {
+      "name": "peek: Alt sets data-sbt-peek",
+      "ok": true
+    },
+    {
+      "name": "peek: releasing Alt clears it",
+      "ok": true
+    },
+    {
+      "name": "focus mode: Ctrl+Alt+B turns it on",
+      "ok": true,
+      "detail": true
+    },
+    {
+      "name": "focus mode: only New session + Capabilities nav; cron/messaging hidden; empty Pinned hidden",
+      "ok": true,
+      "detail": {
+        "groups": {
+          "pinned": false,
+          "sessions": true,
+          "messaging:Photon": false,
+          "messaging:Discord": false,
+          "cron": false
+        },
+        "nav": {
+          "new-session": true,
+          "capabilities": true
+        },
+        "search": {
+          "shown": false,
+          "h": 0,
+          "mode": "keys"
+        },
+        "marks": 7,
+        "style": true,
+        "peek": false
+      }
+    },
+    {
+      "name": "focus mode: saved settings untouched",
+      "ok": true,
+      "detail": "show"
+    },
+    {
+      "name": "focus mode: status-bar chip visible",
+      "ok": true
+    },
+    {
+      "name": "focus mode: chip click turns it off",
+      "ok": true
+    },
+    {
+      "name": "palette: Sidebar commands listed",
+      "ok": true,
+      "detail": [
+        "Sidebar: Customize…",
+        "Sidebar: Toggle focus modeoff",
+        "Sidebar: Show everything",
+        "Sidebar: Cycle Pinned sectionalways",
+        "Sidebar: Cycle search fieldshown",
+        "Sidebar: Toggle Cron jobshidden",
+        "Sidebar: Toggle messaging channelsshown",
+        "Sidebar: Toggle profile railshown"
+      ]
+    },
+    {
+      "name": "\"Show everything\" restores every section and nav row",
+      "ok": true,
+      "detail": {
+        "now": {
+          "groups": {
+            "pinned": true,
+            "sessions": true,
+            "messaging:Photon": true,
+            "messaging:Discord": true,
+            "cron": true
+          },
+          "nav": {
+            "cron": true,
+            "new-session": true,
+            "capabilities": true,
+            "messaging": true,
+            "artifacts": true
+          },
+          "search": {
+            "shown": true,
+            "h": 37,
+            "mode": null
+          },
+          "marks": 7,
+          "style": true,
+          "peek": false
+        },
+        "original": {
+          "groups": {
+            "pinned": true,
+            "sessions": true,
+            "messaging:Photon": true,
+            "messaging:Discord": true,
+            "cron": true
+          },
+          "nav": {
+            "cron": true,
+            "new-session": true,
+            "capabilities": true,
+            "messaging": true,
+            "artifacts": true
+          },
+          "search": {
+            "shown": true,
+            "h": 37,
+            "mode": null
+          },
+          "marks": 7,
+          "style": true,
+          "peek": false
+        }
+      }
+    },
+    {
+      "name": "disable: stylesheet and marks removed; re-enable restores",
+      "ok": true,
+      "detail": {
+        "style": false,
+        "marks": 0,
+        "reenabled": true
+      }
+    }
+  ]
+}
