@@ -75,7 +75,7 @@ const setConfig = async patch =>
 // Drive the real settings UI: click a SegmentedControl option within a row.
 const clickSegment = (rowTitle, option) =>
   evaluate(`(() => {
-    const title = [...document.querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === ${JSON.stringify(rowTitle)} && e.closest('.\\\\@container'))
+    const title = [...(document.querySelector('main') || document).querySelectorAll('*')].find(e => e.children.length === 0 && e.textContent.trim() === ${JSON.stringify(rowTitle)} && e.closest('.\\\\@container'))
     const row = title?.closest('.\\\\@container')
     const btn = row && [...row.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(option)})
     if (!btn) return false
@@ -90,7 +90,13 @@ const check = (name, ok, detail) => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok ? '' : '  ' + JSON.stringify(detail)}`)
 }
 
-// 0. Baseline
+// 0. Baseline: All-profiles sidebar (where profile marks matter), setup card dismissed.
+if ((await evaluate(`localStorage.getItem('hermes.desktop.showAllProfiles')`)) !== 'true') {
+  await evaluate(`localStorage.setItem('hermes.desktop.showAllProfiles', 'true'), location.reload()`)
+  await sleep(8000)
+}
+await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === "I'll choose a provider later")?.click()`)
+await sleep(500)
 await evaluate(`location.hash = '#/settings?tab=plugins&plugin=sidebar-tidy'`)
 await sleep(1500)
 await clickSegment('Pinned', 'Always') // known start
@@ -229,9 +235,90 @@ const paletteOk = await evaluate(`(async () => {
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
   return items
 })()`)
-check('palette: Sidebar commands listed', Array.isArray(paletteOk) && paletteOk.length === 8, paletteOk)
+check('palette: Sidebar commands listed', Array.isArray(paletteOk) && paletteOk.length === 9, paletteOk)
 
-// 9. Show everything restores the original sidebar
+// 9. Profile marks (needs sessions from at least two profiles; the fixture in
+//    e2e/fixture_sql.py provides default + research + writing).
+const MARKS = `(async () => {
+  const api = await window.hermesDesktop.api({ path: '/api/profiles/sessions?limit=200&offset=0&min_messages=0&archived=exclude&order=recent&profile=all' })
+  const owner = Object.fromEntries(api.sessions.map(s => [s.title, s.profile || 'default']))
+  const root = document.querySelector('[data-tour="sessions-sidebar"] [data-sessions-mode]')
+  const rows = [...root.querySelectorAll('button')].filter(b => b.textContent.trim() in owner).map(b => {
+    let mark = null
+    for (let el = b.parentElement, i = 0; el && !mark && i < 5; el = el.parentElement, i++) {
+      mark = el.querySelector(':scope > [data-sbt-mark]')
+    }
+    const sw = mark && (mark.querySelector('[role="img"]') || mark)
+    const r = sw?.getBoundingClientRect()
+    return { title: b.textContent.trim(), profile: owner[b.textContent.trim()], titleX: Math.round(b.getBoundingClientRect().left),
+             mark: mark?.dataset.sbtMark || null, markProfile: mark?.dataset.sbtProfile || null,
+             color: sw && mark.dataset.sbtMark !== 'spacer' ? getComputedStyle(sw).backgroundColor : null,
+             visible: !!r && r.width > 0 && r.height > 0 }
+  })
+  const rail = {}
+  for (const b of document.querySelectorAll('[data-slot="profile-rail"] button[aria-label]')) {
+    const c = getComputedStyle(b).color
+    rail[b.getAttribute('aria-label')] = c
+  }
+  return { rows, rail, profiles: [...new Set(api.sessions.map(s => s.profile || 'default'))] }
+})()`
+const marks = () => evaluate(MARKS)
+await evaluate(`localStorage.setItem('hermes.desktop.showAllProfiles', 'true')`)
+await evaluate(`location.hash = '#/settings?tab=plugins&plugin=sidebar-tidy'`)
+await sleep(800)
+let m = await marks()
+const named = m.rows.filter(r => r.profile !== 'default')
+if (m.profiles.length < 2 || !named.length) {
+  check('profile marks: fixture with named-profile sessions present', false, m)
+} else {
+  await clickSegment('Session rows', 'Edge')
+  await sleep(1500)
+  m = await marks()
+  check(
+    'profile marks "Edge": every named-profile row striped with its own profile, default rows bare',
+    m.rows.every(r => (r.profile === 'default' ? r.mark === null : r.mark === 'edge' && r.markProfile === r.profile && r.visible)),
+    m.rows
+  )
+  check(
+    'profile marks: colors match the profile rail',
+    m.rows.filter(r => r.mark === 'edge').every(r => m.rail[r.profile] && r.color === m.rail[r.profile]),
+    { rows: m.rows, rail: m.rail }
+  )
+  check('profile marks "Edge": titles keep one left edge', new Set(m.rows.map(r => r.titleX)).size === 1, m.rows)
+
+  await clickSegment('Session rows', 'Dot')
+  await sleep(600)
+  m = await marks()
+  check(
+    'profile marks "Dot": named rows get a dot, default rows a same-size spacer',
+    m.rows.every(r => (r.profile === 'default' ? r.mark === 'spacer' : r.mark === 'dot' && r.markProfile === r.profile)),
+    m.rows
+  )
+  check('profile marks "Dot": titles keep one left edge', new Set(m.rows.map(r => r.titleX)).size === 1, m.rows)
+
+  await clickSwitch('Mark default-profile sessions too')
+  await sleep(600)
+  m = await marks()
+  check(
+    'profile marks: "Mark default" outlines default rows',
+    m.rows.filter(r => r.profile === 'default').every(r => r.mark === 'dot' && r.markProfile === 'default'),
+    m.rows
+  )
+  await clickSwitch('Mark default-profile sessions too')
+
+  const legend = await evaluate(`[...document.querySelectorAll('[data-sbt-legend]')].map(e => e.dataset.sbtLegend)`)
+  check('profile marks: settings legend lists the named profiles', named.every(r => legend.includes(r.profile)), legend)
+
+  await clickSegment('Session rows', 'Off')
+  await sleep(600)
+  m = await marks()
+  check('profile marks "Off": no marks at all', m.rows.every(r => r.mark === null), m.rows)
+  check('profile marks: persisted', (await evaluate(`JSON.parse(localStorage.getItem('${CFG}')).profileMarks.style`)) === 'off')
+  await clickSegment('Session rows', 'Edge')
+  await sleep(1000)
+}
+
+// 10. Show everything restores the original sidebar
 await evaluate(`location.hash = '#/settings?tab=plugins&plugin=sidebar-tidy'`)
 await sleep(800)
 await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Show everything').click()`)
@@ -243,19 +330,36 @@ check(
   { now: s, original }
 )
 
-// 10. Disable the plugin → all marks, style, nav prefs gone
+// 11. Disable the plugin → all marks, style, nav prefs and profile marks gone
 const disabled = await evaluate(`(async () => {
   location.hash = '#/capabilities?tab=plugins'
   await new Promise(r => setTimeout(r, 1500))
-  const sw = [...document.querySelectorAll('[role="switch"]')].find(e => /Sidebar Tidy|sidebar-tidy/.test(e.getAttribute('aria-label') || ''))
-  if (!sw) return 'no switch'
-  sw.click(); await new Promise(r => setTimeout(r, 800))
-  const r = { style: !!document.getElementById('sidebar-tidy-style'), marks: document.querySelectorAll('[data-sbt-section]').length }
-  sw.click(); await new Promise(r => setTimeout(r, 1200))
+  let sw = [...document.querySelectorAll('[role="switch"]')].find(e => /Sidebar Tidy|sidebar-tidy/.test(e.getAttribute('aria-label') || ''))
+  let via = 'plugins page switch'
+  if (!sw) {
+    // Newer builds list disk plugins outside this page; fall back to the same
+    // store call the switch makes (dev server only: same module instance).
+    const store = await import('/src/contrib/plugins-store.ts').catch(() => null)
+    if (!store?.setPluginEnabled) return 'no switch'
+    let on = true
+    sw = { click: () => { on = !on; return store.setPluginEnabled('sidebar-tidy', on) } }
+    via = 'plugins-store setPluginEnabled'
+  }
+  await sw.click(); await new Promise(r => setTimeout(r, 800))
+  const r = { style: !!document.getElementById('sidebar-tidy-style'), marks: document.querySelectorAll('[data-sbt-section]').length,
+              profileMarks: document.querySelectorAll('[data-sbt-mark]').length }
+  r.via = via
+  await sw.click(); await new Promise(r => setTimeout(r, 1200))
+  await new Promise(r => setTimeout(r, 1500))
   r.reenabled = !!document.getElementById('sidebar-tidy-style')
+  r.profileMarksBack = document.querySelectorAll('[data-sbt-mark]').length
   return r
 })()`)
-check('disable: stylesheet and marks removed; re-enable restores', disabled?.style === false && disabled?.marks === 0 && disabled?.reenabled, disabled)
+check(
+  'disable: stylesheet, section marks and profile marks removed; re-enable restores',
+  disabled?.style === false && disabled?.marks === 0 && disabled?.profileMarks === 0 && disabled?.reenabled && disabled?.profileMarksBack > 0,
+  disabled
+)
 
 const pass = results.filter(r => r.ok).length
 const env = await evaluate(`JSON.stringify({ ua: navigator.userAgent, url: location.href })`)

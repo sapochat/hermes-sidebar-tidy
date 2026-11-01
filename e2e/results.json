@@ -1,9 +1,9 @@
 {
-  "at": "2026-10-18T18:49:51.468Z",
-  "pass": 26,
-  "total": 26,
+  "at": "2026-11-01T03:51:15.594Z",
+  "pass": 33,
+  "total": 33,
   "env": {
-    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Hermes/0.0.0 Chrome/144.0.7559.236 Electron/40.10.2 Safari/537.36",
+    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Hermes/0.0.0 Chrome/152.0.7977.167 Electron/44.9.3 Safari/537.36",
     "url": "http://127.0.0.1:5194/#/capabilities?tab=plugins"
   },
   "results": [
@@ -14,23 +14,21 @@
         "groups": {
           "pinned": true,
           "sessions": true,
-          "messaging:Photon": true,
-          "messaging:Discord": true,
           "cron": true
         },
         "nav": {
-          "cron": true,
           "new-session": true,
           "capabilities": true,
           "messaging": true,
-          "artifacts": true
+          "artifacts": true,
+          "cron": true
         },
         "search": {
           "shown": true,
           "h": 37,
           "mode": null
         },
-        "marks": 7,
+        "marks": 5,
         "style": true,
         "peek": false
       }
@@ -41,8 +39,6 @@
       "detail": {
         "pinned": true,
         "sessions": true,
-        "messaging:Photon": true,
-        "messaging:Discord": true,
         "cron": true
       }
     },
@@ -52,8 +48,6 @@
       "detail": {
         "pinned": false,
         "sessions": true,
-        "messaging:Photon": true,
-        "messaging:Discord": true,
         "cron": true
       }
     },
@@ -67,8 +61,6 @@
       "detail": {
         "pinned": true,
         "sessions": true,
-        "messaging:Photon": true,
-        "messaging:Discord": true,
         "cron": true
       }
     },
@@ -78,8 +70,6 @@
       "detail": {
         "pinned": false,
         "sessions": true,
-        "messaging:Photon": true,
-        "messaging:Discord": true,
         "cron": true
       }
     },
@@ -93,30 +83,6 @@
       "detail": {
         "pinned": false,
         "sessions": true,
-        "messaging:Photon": true,
-        "messaging:Discord": true,
-        "cron": false
-      }
-    },
-    {
-      "name": "one platform (Photon) hidden, others shown",
-      "ok": true,
-      "detail": {
-        "pinned": false,
-        "sessions": true,
-        "messaging:Photon": false,
-        "messaging:Discord": true,
-        "cron": false
-      }
-    },
-    {
-      "name": "all messaging sections hidden",
-      "ok": true,
-      "detail": {
-        "pinned": false,
-        "sessions": true,
-        "messaging:Photon": false,
-        "messaging:Discord": false,
         "cron": false
       }
     },
@@ -146,10 +112,10 @@
       "name": "nav: Artifacts hidden through sidebarNav.prefs (row unmounted)",
       "ok": true,
       "detail": {
-        "cron": true,
         "new-session": true,
         "capabilities": true,
-        "messaging": true
+        "messaging": true,
+        "cron": true
       }
     },
     {
@@ -160,9 +126,9 @@
       "name": "nav: reorder moves Scheduled jobs above Messaging",
       "ok": true,
       "detail": [
-        "cron",
         "new-session",
         "capabilities",
+        "cron",
         "messaging"
       ]
     },
@@ -186,8 +152,6 @@
         "groups": {
           "pinned": false,
           "sessions": true,
-          "messaging:Photon": false,
-          "messaging:Discord": false,
           "cron": false
         },
         "nav": {
@@ -199,7 +163,7 @@
           "h": 0,
           "mode": "keys"
         },
-        "marks": 7,
+        "marks": 5,
         "style": true,
         "peek": false
       }
@@ -228,8 +192,389 @@
         "Sidebar: Cycle search fieldshown",
         "Sidebar: Toggle Cron jobshidden",
         "Sidebar: Toggle messaging channelsshown",
-        "Sidebar: Toggle profile railshown"
+        "Sidebar: Toggle profile railshown",
+        "Sidebar: Cycle profile marksedge"
       ]
+    },
+    {
+      "name": "profile marks \"Edge\": every named-profile row striped with its own profile, default rows bare",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "edge",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "edge",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 38,
+          "mark": "edge",
+          "markProfile": "writing",
+          "color": "rgb(221, 104, 75)",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "profile marks: colors match the profile rail",
+      "ok": true,
+      "detail": {
+        "rows": [
+          {
+            "title": "Plan weekend hike",
+            "profile": "default",
+            "titleX": 38,
+            "mark": null,
+            "markProfile": null,
+            "color": null,
+            "visible": false
+          },
+          {
+            "title": "Fix router DNS",
+            "profile": "default",
+            "titleX": 38,
+            "mark": null,
+            "markProfile": null,
+            "color": null,
+            "visible": false
+          },
+          {
+            "title": "Survey GPU rental prices",
+            "profile": "research",
+            "titleX": 38,
+            "mark": "edge",
+            "markProfile": "research",
+            "color": "rgb(75, 221, 121)",
+            "visible": true
+          },
+          {
+            "title": "Compare vector DBs",
+            "profile": "research",
+            "titleX": 38,
+            "mark": "edge",
+            "markProfile": "research",
+            "color": "rgb(75, 221, 121)",
+            "visible": true
+          },
+          {
+            "title": "Draft essay on toys",
+            "profile": "writing",
+            "titleX": 38,
+            "mark": "edge",
+            "markProfile": "writing",
+            "color": "rgb(221, 104, 75)",
+            "visible": true
+          }
+        ],
+        "rail": {
+          "Switch to default": "color(srgb 0.121569 0.137255 0.156863 / 0.94)",
+          "research": "rgb(75, 221, 121)",
+          "writing": "rgb(221, 104, 75)",
+          "New profile": "color(srgb 0.121569 0.137255 0.156863 / 0.54)",
+          "Import profile…": "color(srgb 0.121569 0.137255 0.156863 / 0.54)",
+          "Manage profiles…": "color(srgb 0.121569 0.137255 0.156863 / 0.54)",
+          "Manage gateways…": "color(srgb 0.121569 0.137255 0.156863 / 0.54)"
+        }
+      }
+    },
+    {
+      "name": "profile marks \"Edge\": titles keep one left edge",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "edge",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "edge",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 38,
+          "mark": "edge",
+          "markProfile": "writing",
+          "color": "rgb(221, 104, 75)",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "profile marks \"Dot\": named rows get a dot, default rows a same-size spacer",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 50,
+          "mark": "spacer",
+          "markProfile": null,
+          "color": null,
+          "visible": true
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 50,
+          "mark": "spacer",
+          "markProfile": null,
+          "color": null,
+          "visible": true
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "writing",
+          "color": "rgb(221, 104, 75)",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "profile marks \"Dot\": titles keep one left edge",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 50,
+          "mark": "spacer",
+          "markProfile": null,
+          "color": null,
+          "visible": true
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 50,
+          "mark": "spacer",
+          "markProfile": null,
+          "color": null,
+          "visible": true
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "writing",
+          "color": "rgb(221, 104, 75)",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "profile marks: \"Mark default\" outlines default rows",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "default",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": true
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "default",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": true
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "research",
+          "color": "rgb(75, 221, 121)",
+          "visible": true
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 50,
+          "mark": "dot",
+          "markProfile": "writing",
+          "color": "rgb(221, 104, 75)",
+          "visible": true
+        }
+      ]
+    },
+    {
+      "name": "profile marks: settings legend lists the named profiles",
+      "ok": true,
+      "detail": [
+        "research",
+        "writing"
+      ]
+    },
+    {
+      "name": "profile marks \"Off\": no marks at all",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false
+        }
+      ]
+    },
+    {
+      "name": "profile marks: persisted",
+      "ok": true
     },
     {
       "name": "\"Show everything\" restores every section and nav row",
@@ -239,14 +584,12 @@
           "groups": {
             "pinned": true,
             "sessions": true,
-            "messaging:Photon": true,
-            "messaging:Discord": true,
             "cron": true
           },
           "nav": {
-            "cron": true,
             "new-session": true,
             "capabilities": true,
+            "cron": true,
             "messaging": true,
             "artifacts": true
           },
@@ -255,7 +598,7 @@
             "h": 37,
             "mode": null
           },
-          "marks": 7,
+          "marks": 5,
           "style": true,
           "peek": false
         },
@@ -263,35 +606,36 @@
           "groups": {
             "pinned": true,
             "sessions": true,
-            "messaging:Photon": true,
-            "messaging:Discord": true,
             "cron": true
           },
           "nav": {
-            "cron": true,
             "new-session": true,
             "capabilities": true,
             "messaging": true,
-            "artifacts": true
+            "artifacts": true,
+            "cron": true
           },
           "search": {
             "shown": true,
             "h": 37,
             "mode": null
           },
-          "marks": 7,
+          "marks": 5,
           "style": true,
           "peek": false
         }
       }
     },
     {
-      "name": "disable: stylesheet and marks removed; re-enable restores",
+      "name": "disable: stylesheet, section marks and profile marks removed; re-enable restores",
       "ok": true,
       "detail": {
         "style": false,
         "marks": 0,
-        "reenabled": true
+        "profileMarks": 0,
+        "via": "plugins-store setPluginEnabled",
+        "reenabled": true,
+        "profileMarksBack": 3
       }
     }
   ]

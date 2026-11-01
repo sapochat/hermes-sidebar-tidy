@@ -13,8 +13,10 @@
  *     classifier fails OPEN: anything it cannot identify stays visible.
  *
  * Extras: "When not empty" mode for Pinned, keyboard-only search, a focus
- * mode (⌘⌥B / Ctrl+Alt+B), and hold ⌥/Alt over the sidebar to peek at
- * whatever is hidden.
+ * mode (⌘⌥B / Ctrl+Alt+B), hold ⌥/Alt over the sidebar to peek at whatever
+ * is hidden, and profile marks: a small swatch on each session row in its
+ * profile's color (the same color the profile rail shows), through the
+ * official `sessionRow.leading` slot.
  */
 
 import {
@@ -37,10 +39,15 @@ import {
   translateNow,
   useValue
 } from '@hermes/plugin-sdk'
+// Newer SDK exports read through the namespace so an older Desktop build that
+// lacks them still loads the rest of the plugin (a missing named import would
+// fail the whole module at link time).
+import * as sdk from '@hermes/plugin-sdk'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 const ID = 'sidebar-tidy'
-const VERSION = '1.0.0'
+const VERSION = '1.1.0'
 const SIDEBAR = '[data-tour="sessions-sidebar"]'
 const CONTENT_CHILD = '[data-sidebar="content"] > *'
 const PIN_STORAGE_KEY = 'hermes.desktop.pinnedSessions'
@@ -49,6 +56,8 @@ const CORE_NAV = ['new-session', 'capabilities', 'messaging', 'artifacts', 'cron
 // Core refuses to hide this row: it hosts the Plugins tab (the off-switch).
 const NEVER_HIDE = new Set(['capabilities'])
 const MARK_ATTRS = ['data-sbt-section', 'data-sbt-hidden', 'data-sbt-search', 'data-sbt-has-value']
+const PROFILE_COLORS_KEY = 'hermes.desktop.profileColors'
+const MARK_STYLES = ['off', 'edge', 'dot']
 
 const DEFAULT_CONFIG = {
   v: 1,
@@ -62,7 +71,8 @@ const DEFAULT_CONFIG = {
   messagingAll: 'show', // show | hide
   messaging: {}, // { [platform label]: 'hide' }
   nav: { hide: [], order: [] },
-  focus: false
+  focus: false,
+  profileMarks: { style: 'edge', includeDefault: false } // style: off | edge | dot
 }
 
 const FOCUS_SECTIONS = { pinned: 'auto', search: 'keys', cron: 'hide', profileRail: 'hide' }
@@ -87,7 +97,17 @@ function normalizeConfig(raw) {
     messagingAll: cfg.messagingAll === 'hide' ? 'hide' : 'show',
     messaging: cfg.messaging && typeof cfg.messaging === 'object' ? { ...cfg.messaging } : {},
     nav: { hide: strings(nav.hide), order: strings(nav.order) },
-    focus: Boolean(cfg.focus)
+    focus: Boolean(cfg.focus),
+    profileMarks: normalizeMarks(cfg.profileMarks)
+  }
+}
+
+function normalizeMarks(raw) {
+  const marks = raw && typeof raw === 'object' ? raw : {}
+
+  return {
+    style: MARK_STYLES.includes(marks.style) ? marks.style : DEFAULT_CONFIG.profileMarks.style,
+    includeDefault: Boolean(marks.includeDefault)
   }
 }
 
@@ -405,6 +425,247 @@ function rememberSeen(navSeen, platforms, present) {
   }
 }
 
+// ─── profile marks ──────────────────────────────────────────────────────────
+//
+// The row slot hands us only the session's stored id, so ownership comes from
+// one read-only listing across every profile (`host.listPersistedSessions`,
+// the same endpoint the All-profiles sidebar reads). Rows outside that window
+// simply get no mark; nothing is ever written back.
+
+const OWNERS_LIMIT = 500
+const OWNERS_TTL_MS = 60_000
+const OWNERS_RETRY_MS = 15_000
+
+const $owners = atom({}) // stored or live session id -> profile name
+const $profileColors = atom({}) // user-picked rail colors (profile -> css color)
+
+const owners = { at: 0, inflight: false, epoch: 0 }
+
+function marksSupported() {
+  return Boolean(sdk.SESSION_ROW_AREAS?.leading) && typeof host.listPersistedSessions === 'function'
+}
+
+function profileKey(name) {
+  return (typeof name === 'string' ? name.trim() : '') || 'default'
+}
+
+function readProfileColors() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(PROFILE_COLORS_KEY) || '{}')
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {}
+    }
+
+    return Object.fromEntries(Object.entries(parsed).filter(([, v]) => typeof v === 'string' && v))
+  } catch {
+    return {}
+  }
+}
+
+function syncProfileColors() {
+  const next = readProfileColors()
+
+  if (JSON.stringify(next) !== JSON.stringify($profileColors.get())) {
+    $profileColors.set(next)
+  }
+}
+
+// Mirrors core's lib/profile-color hash, used only if the SDK predates the
+// `profileColor` export.
+function fallbackProfileColor(key) {
+  let hash = 0
+
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  }
+
+  return `hsl(${hash % 360} 68% 58%)`
+}
+
+/** Same answer as core's resolveProfileColor: override, else the stable hue.
+ *  Default stays neutral (null), as it does on the profile rail. */
+function colorForProfile(name, overrides = $profileColors.get()) {
+  const key = profileKey(name)
+
+  if (key === 'default') {
+    return null
+  }
+
+  return overrides[key] || (typeof sdk.profileColor === 'function' ? sdk.profileColor(key) : null) || fallbackProfileColor(key)
+}
+
+function refreshOwners({ force = false } = {}) {
+  if (!marksSupported() || owners.inflight) {
+    return
+  }
+
+  const wait = force || !owners.at ? 0 : OWNERS_RETRY_MS
+
+  if (Date.now() - owners.at < wait) {
+    return
+  }
+
+  owners.at = Date.now()
+  owners.inflight = true
+  const epoch = owners.epoch
+
+  Promise.resolve()
+    .then(() => host.listPersistedSessions(null, { profile: 'all', limit: OWNERS_LIMIT }))
+    .then(result => {
+      if (epoch !== owners.epoch) {
+        return
+      }
+
+      const next = { ...$owners.get() }
+      let changed = false
+
+      for (const row of Array.isArray(result?.sessions) ? result.sessions : []) {
+        const profile = profileKey(row?.profile)
+        const ids = [row?.id, row?._lineage_root_id, ...(Array.isArray(row?._lineage_ids) ? row._lineage_ids : [])]
+
+        for (const id of ids) {
+          if (typeof id === 'string' && id && next[id] !== profile) {
+            next[id] = profile
+            changed = true
+          }
+        }
+      }
+
+      if (changed) {
+        $owners.set(next)
+      }
+    })
+    .catch(error => console.warn('[sidebar-tidy] could not read session owners; profile marks paused', error))
+    .finally(() => {
+      if (epoch === owners.epoch) {
+        owners.inflight = false
+      }
+    })
+}
+
+const MARK_BASE = {
+  display: 'inline-block',
+  flexShrink: 0,
+  alignSelf: 'center',
+  boxSizing: 'border-box'
+}
+
+const DOT_SIZE = '0.375rem'
+
+// Default has no color of its own: an outline, like the rail's neutral tile.
+function swatchPaint(color) {
+  return {
+    background: color || 'transparent',
+    border: color ? 'none' : '1px solid var(--ui-text-quaternary, currentColor)'
+  }
+}
+
+/**
+ * Edge: a short stripe in the row's left padding. The slot itself is zero
+ * width and cancels the row's flex gap, so the title starts exactly where it
+ * does on an unmarked row; the stripe is positioned from measured geometry,
+ * not from core's class names.
+ */
+function EdgeMark({ color, label, profile }) {
+  const ref = useRef(null)
+
+  useLayoutEffect(() => {
+    const slot = ref.current
+    const stripe = slot?.querySelector('[role="img"]')
+    const cluster = slot?.parentElement
+    const row = cluster?.parentElement
+
+    if (!slot || !stripe || !cluster || !row) {
+      return
+    }
+
+    const gap = parseFloat(getComputedStyle(cluster).columnGap) || 0
+    slot.style.marginRight = gap ? `-${gap}px` : '0px'
+    const offset = row.getBoundingClientRect().left - slot.getBoundingClientRect().left
+    stripe.style.left = `${Math.round(offset + 3)}px`
+  })
+
+  return jsx('span', {
+    'data-sbt-profile': profile,
+    'data-sbt-mark': 'edge',
+    ref,
+    style: { position: 'relative', flexShrink: 0, width: 0, alignSelf: 'stretch' },
+    children: jsx(Tip, {
+      label,
+      children: jsx('span', {
+        'aria-label': label,
+        role: 'img',
+        style: {
+          position: 'absolute',
+          top: '50%',
+          width: '3px',
+          height: '0.875rem',
+          transform: 'translateY(-50%)',
+          borderRadius: '2px',
+          boxSizing: 'border-box',
+          ...swatchPaint(color)
+        }
+      })
+    })
+  })
+}
+
+/** Dot: an inline swatch after the status dot. Unmarked rows get the same
+ *  empty box so every title keeps one left edge. */
+function DotMark({ color, label, profile }) {
+  const box = { ...MARK_BASE, width: DOT_SIZE, height: DOT_SIZE, borderRadius: '999px' }
+
+  if (!profile) {
+    return jsx('span', { 'aria-hidden': 'true', 'data-sbt-mark': 'spacer', style: box })
+  }
+
+  return jsx(Tip, {
+    label,
+    children: jsx('span', {
+      'aria-label': label,
+      'data-sbt-mark': 'dot',
+      'data-sbt-profile': profile,
+      role: 'img',
+      style: { ...box, ...swatchPaint(color) }
+    })
+  })
+}
+
+function ProfileMark({ sessionId }) {
+  const marks = useValue($config).profileMarks
+  const profile = useValue($owners)[sessionId]
+  const overrides = useValue($profileColors)
+  const off = marks.style === 'off'
+
+  // An id we haven't seen is a session newer than the last listing.
+  useEffect(() => {
+    if (!off && !profile) {
+      refreshOwners()
+    }
+  }, [off, profile, sessionId])
+
+  if (off) {
+    return null
+  }
+
+  const shown = profile && (profile !== 'default' || marks.includeDefault) ? profile : null
+
+  if (marks.style === 'dot') {
+    return jsx(DotMark, { color: shown && colorForProfile(shown, overrides), label: `${shown} profile`, profile: shown })
+  }
+
+  if (!shown) {
+    return null
+  }
+
+  return jsx(EdgeMark, { color: colorForProfile(shown, overrides), label: `${shown} profile`, profile: shown })
+}
+
+function setMarks(patch) {
+  api?.update(cfg => ({ ...cfg, profileMarks: { ...cfg.profileMarks, ...patch } }))
+}
+
 // ─── styles ─────────────────────────────────────────────────────────────────
 
 const CSS_TEXT = `
@@ -534,6 +795,57 @@ const BINARY_OPTIONS = [
   { id: 'show', label: 'Shown' },
   { id: 'hide', label: 'Hidden' }
 ]
+const MARK_OPTIONS = [
+  { id: 'off', label: 'Off' },
+  { id: 'edge', label: 'Edge' },
+  { id: 'dot', label: 'Dot' }
+]
+
+/** Every profile the owner listing has seen, with the color its mark uses. */
+function ProfileLegend() {
+  const ownerMap = useValue($owners)
+  const overrides = useValue($profileColors)
+  const marks = useValue($config).profileMarks
+  const names = [...new Set(Object.values(ownerMap))]
+    .filter(name => name !== 'default' || marks.includeDefault)
+    .sort((a, b) => (a === 'default' ? -1 : b === 'default' ? 1 : a.localeCompare(b)))
+
+  if (!names.length) {
+    return jsx('p', {
+      className: 'py-2 text-xs text-(--ui-text-tertiary)',
+      children: 'No named-profile sessions seen yet.'
+    })
+  }
+
+  return jsx('div', {
+    className: 'flex flex-wrap gap-x-4 gap-y-1.5 py-2 text-xs text-(--ui-text-secondary)',
+    children: names.map(name => {
+      const color = colorForProfile(name, overrides)
+
+      return jsxs(
+        'span',
+        {
+          className: 'inline-flex items-center',
+          'data-sbt-legend': name,
+          children: [
+            jsx('span', {
+              style: {
+                ...MARK_BASE,
+                marginRight: '0.375rem',
+                width: marks.style === 'dot' ? '0.5rem' : '3px',
+                height: marks.style === 'dot' ? '0.5rem' : '0.875rem',
+                borderRadius: marks.style === 'dot' ? '999px' : '2px',
+                ...swatchPaint(color)
+              }
+            }),
+            name
+          ]
+        },
+        name
+      )
+    })
+  })
+}
 
 function Heading({ children }) {
   return jsx('h3', {
@@ -663,6 +975,30 @@ function SettingsPage() {
         onChange: v => setSection('profileRail', v)
       }),
 
+      jsx(Heading, { children: 'Profile marks' }),
+      marksSupported()
+        ? jsx(SectionRow, {
+            title: 'Session rows',
+            description:
+              'Color each session by its profile, matching the profile rail. Edge is a stripe in the row\'s left margin and never moves the title; Dot sits after the status dot and indents every row slightly. Change a color from the rail\'s color picker.',
+            value: cfg.profileMarks.style,
+            options: MARK_OPTIONS,
+            onChange: v => setMarks({ style: v })
+          })
+        : jsx('p', {
+            className: 'py-2 text-xs text-(--ui-text-tertiary)',
+            children: 'Needs a newer Hermes Desktop (the session-row slot isn\'t available in this build).'
+          }),
+      marksSupported() &&
+        jsx(ToggleRow, {
+          checked: cfg.profileMarks.includeDefault,
+          description: 'The default profile has no color, so it gets an outline.',
+          disabled: cfg.profileMarks.style === 'off',
+          label: 'Mark default-profile sessions too',
+          onChange: on => setMarks({ includeDefault: on })
+        }),
+      marksSupported() && cfg.profileMarks.style !== 'off' && jsx(ProfileLegend, {}),
+
       jsx(Heading, { children: 'Messaging channels' }),
       jsx(ToggleRow, {
         checked: cfg.messagingAll !== 'hide',
@@ -747,6 +1083,7 @@ const PINNED_CYCLE = { show: 'auto', auto: 'hide', hide: 'show' }
 const PINNED_NAMES = { show: 'always', auto: 'when not empty', hide: 'hidden' }
 const SEARCH_CYCLE = { show: 'keys', keys: 'hide', hide: 'show' }
 const SEARCH_NAMES = { show: 'shown', keys: 'keyboard only', hide: 'hidden' }
+const MARK_CYCLE = { off: 'edge', edge: 'dot', dot: 'off' }
 
 function paletteRows() {
   const flip = key => () => setSection(key, $config.get().sections[key] === 'hide' ? 'show' : 'hide')
@@ -797,7 +1134,14 @@ function paletteRows() {
     row('rail', 'Sidebar: Toggle profile rail', flip('profileRail'), () => onOff($config.get().sections.profileRail), [
       'profile',
       'rail'
-    ])
+    ]),
+    row(
+      'marks',
+      'Sidebar: Cycle profile marks',
+      () => setMarks({ style: MARK_CYCLE[$config.get().profileMarks.style] || 'edge' }),
+      () => $config.get().profileMarks.style,
+      ['profile', 'color', 'dot', 'marks']
+    )
   ]
 }
 
@@ -806,7 +1150,7 @@ function paletteRows() {
 export default {
   id: ID,
   name: 'Sidebar Tidy',
-  description: 'Hide, auto-hide and reorder sidebar sections, channels and nav rows.',
+  description: 'Hide, auto-hide and reorder sidebar sections, channels and nav rows; color-mark sessions by profile.',
 
   register(ctx) {
     $config.set(normalizeConfig(ctx.storage.get('config', DEFAULT_CONFIG)))
@@ -887,11 +1231,29 @@ export default {
     // and a focus-mode nav list that grew because a new plugin row appeared.
     ctx.setInterval(() => {
       bind()
+      syncProfileColors() // the rail's color picker writes localStorage
 
       if ($config.get().focus) {
         applyNav()
       }
     }, 1500)
+
+    // Profile marks: the official row slot; ownership refreshes once a minute.
+    syncProfileColors()
+
+    if (marksSupported()) {
+      refreshOwners({ force: true })
+      ctx.setInterval(() => {
+        if ($config.get().profileMarks.style !== 'off') {
+          refreshOwners({ force: true })
+        }
+      }, OWNERS_TTL_MS)
+      ctx.register({
+        id: 'profile-mark',
+        area: sdk.SESSION_ROW_AREAS.leading,
+        data: { render: ({ sessionId }) => jsx(ProfileMark, { sessionId }) }
+      })
+    }
 
     // Peek: hold Alt/Option with the pointer over the sidebar.
     const html = document.documentElement
@@ -950,6 +1312,9 @@ export default {
       }
 
       marked = new Set()
+      owners.epoch += 1
+      owners.inflight = false
+      owners.at = 0
       endPeek()
       removeStyle()
       api = null
