@@ -43,7 +43,7 @@ import {
 // lacks them still loads the rest of the plugin (a missing named import would
 // fail the whole module at link time).
 import * as sdk from '@hermes/plugin-sdk'
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
 
 const ID = 'sidebar-tidy'
@@ -72,7 +72,8 @@ const DEFAULT_CONFIG = {
   messaging: {}, // { [platform label]: 'hide' }
   nav: { hide: [], order: [] },
   focus: false,
-  profileMarks: { style: 'edge', includeDefault: false } // style: off | edge | dot | tint
+  // style: off | edge | dot | tint; workingDot: accent | quiet; shine: stock | profile
+  profileMarks: { style: 'edge', includeDefault: false, workingDot: 'accent', shine: 'stock' }
 }
 
 const FOCUS_SECTIONS = { pinned: 'auto', search: 'keys', cron: 'hide', profileRail: 'hide' }
@@ -107,8 +108,16 @@ function normalizeMarks(raw) {
 
   return {
     style: MARK_STYLES.includes(marks.style) ? marks.style : DEFAULT_CONFIG.profileMarks.style,
-    includeDefault: Boolean(marks.includeDefault)
+    includeDefault: Boolean(marks.includeDefault),
+    workingDot: marks.workingDot === 'quiet' ? 'quiet' : 'accent',
+    shine: marks.shine === 'profile' ? 'profile' : 'stock'
   }
+}
+
+/** Anything that needs to know a row's profile: a visible mark, or one of the
+ *  working-session overrides (which work even with marks off). */
+function marksActive(marks = $config.get().profileMarks) {
+  return marks.style !== 'off' || marks.workingDot === 'quiet' || marks.shine === 'profile'
 }
 
 /** Focus mode overlays the saved config without overwriting it. */
@@ -673,16 +682,37 @@ function ProfileMark({ sessionId }) {
   const marks = useValue($config).profileMarks
   const profile = useValue($owners)[sessionId]
   const overrides = useValue($profileColors)
-  const off = marks.style === 'off'
+  const active = marksActive(marks)
 
   // An id we haven't seen is a session newer than the last listing.
   useEffect(() => {
-    if (!off && !profile) {
+    if (active && !profile) {
       refreshOwners()
     }
-  }, [off, profile, sessionId])
+  }, [active, profile, sessionId])
 
-  if (off) {
+  if (!active) {
+    return null
+  }
+
+  const mark = VisibleMark({ marks, overrides, profile })
+
+  if (marks.workingDot === 'accent' && marks.shine === 'stock') {
+    return mark
+  }
+
+  // Working overrides: a hidden carrier the row's stylesheet rules find with
+  // :has(). display:none keeps it out of the row's flex layout entirely.
+  return jsxs(Fragment, {
+    children: [
+      jsx('span', { 'data-sbt-carrier': '', 'data-sbt-profile': profile || '', hidden: true }, 'carrier'),
+      mark && jsx(Fragment, { children: mark }, 'mark')
+    ]
+  })
+}
+
+function VisibleMark({ marks, overrides, profile }) {
+  if (marks.style === 'off') {
     return null
   }
 
@@ -745,6 +775,81 @@ ${SIDEBAR} :has(> [data-sbt-mark="tint"]) > :not([data-sbt-mark]) .size-1.rounde
   margin: -1px;
 }
 `
+
+// ─── working sessions ───────────────────────────────────────────────────────
+// Desktop paints a working row twice: an accent status dot AND a travelling
+// shine around the row. Neither has a plugin hook, so these rules are the
+// second DOM-reliant piece (after Tint). They only match a row that carries
+// the plugin's hidden carrier, and only the accent-filled / accent-hollow dot
+// (working / stalled) — needs-input amber and unread green are never touched.
+// If Desktop's markup changes the rules match nothing: stock dot, stock shine.
+
+const WORKING_STYLE_ID = 'sidebar-tidy-working'
+const SAFE_COLOR = /^[#\w\s(),.%/-]+$/
+
+function workingCss() {
+  const marks = $config.get().profileMarks
+
+  if (marks.workingDot !== 'quiet' && marks.shine !== 'profile') {
+    return ''
+  }
+
+  const row = profile =>
+    `${SIDEBAR} [data-working="true"]:has([data-sbt-carrier]${profile === undefined ? '' : `[data-sbt-profile=${JSON.stringify(profile)}]`})`
+  const dot = (profile, paint) =>
+    `${row(profile)} .rounded-full[role="status"][class*="bg-(--ui-accent)"] { background-color: ${paint} !important; }\n` +
+    `${row(profile)} .rounded-full[role="status"][class*="border-(--ui-accent)"] { border-color: ${paint} !important; }\n`
+
+  const overrides = $profileColors.get()
+  const profiles = new Set([...Object.values($owners.get()), ...Object.keys(overrides)])
+  let css = ''
+
+  if (marks.workingDot === 'quiet') {
+    // No profile color (default, or not yet known): the idle grey.
+    css += dot(undefined, 'var(--ui-text-quaternary)')
+  }
+
+  for (const profile of profiles) {
+    const color = profile && colorForProfile(profile, overrides)
+
+    if (!color || !SAFE_COLOR.test(color)) {
+      continue
+    }
+
+    if (marks.workingDot === 'quiet') {
+      css += dot(profile, color)
+    }
+
+    if (marks.shine === 'profile') {
+      css += `${row(profile)} > .arc-border.arc-row { --arc-c1: ${color} !important; }\n`
+    }
+  }
+
+  return css
+}
+
+function installWorkingStyle() {
+  document.getElementById(WORKING_STYLE_ID)?.remove()
+  const style = document.createElement('style')
+  style.id = WORKING_STYLE_ID
+  document.head.appendChild(style)
+
+  const update = () => {
+    const css = workingCss()
+
+    if (style.textContent !== css) {
+      style.textContent = css
+    }
+  }
+
+  update()
+  const stops = [$config.listen(update), $owners.listen(update), $profileColors.listen(update)]
+
+  return () => {
+    stops.forEach(stop => stop())
+    style.remove()
+  }
+}
 
 function installStyle() {
   document.getElementById(STYLE_ID)?.remove()
@@ -849,6 +954,14 @@ const MARK_OPTIONS = [
   { id: 'edge', label: 'Edge' },
   { id: 'dot', label: 'Dot' },
   { id: 'tint', label: 'Tint' }
+]
+const WORKING_DOT_OPTIONS = [
+  { id: 'accent', label: 'Accent' },
+  { id: 'quiet', label: 'Quiet' }
+]
+const SHINE_OPTIONS = [
+  { id: 'stock', label: 'Stock' },
+  { id: 'profile', label: 'Profile' }
 ]
 
 /** Every profile the owner listing has seen, with the color its mark uses. */
@@ -1050,7 +1163,24 @@ function SettingsPage() {
           label: 'Mark default-profile sessions too',
           onChange: on => setMarks({ includeDefault: on })
         }),
-      marksSupported() && cfg.profileMarks.style !== 'off' && jsx(ProfileLegend, {}),
+      marksSupported() &&
+        jsx(SectionRow, {
+          title: 'Working dot',
+          description:
+            'While a session is working, Desktop shows an accent dot and a shine around the row. Quiet drops the accent: the dot takes the session\'s profile color (grey for default) and the shine alone says it\'s busy. Waiting-for-you and unread dots are never changed.',
+          value: cfg.profileMarks.workingDot,
+          options: WORKING_DOT_OPTIONS,
+          onChange: v => setMarks({ workingDot: v })
+        }),
+      marksSupported() &&
+        jsx(SectionRow, {
+          title: 'Working shine',
+          description: 'Profile colors the shine around a working session in its profile\'s color. Default-profile sessions keep the stock shine.',
+          value: cfg.profileMarks.shine,
+          options: SHINE_OPTIONS,
+          onChange: v => setMarks({ shine: v })
+        }),
+      marksSupported() && marksActive(cfg.profileMarks) && jsx(ProfileLegend, {}),
 
       jsx(Heading, { children: 'Messaging channels' }),
       jsx(ToggleRow, {
@@ -1259,6 +1389,7 @@ export default {
     }
 
     const removeStyle = installStyle()
+    const removeWorkingStyle = marksSupported() ? installWorkingStyle() : () => {}
     applyNav()
 
     // Watch only the sidebar subtree; re-bind if the sidebar remounts.
@@ -1297,7 +1428,7 @@ export default {
     if (marksSupported()) {
       refreshOwners({ force: true })
       ctx.setInterval(() => {
-        if ($config.get().profileMarks.style !== 'off') {
+        if (marksActive()) {
           refreshOwners({ force: true })
         }
       }, OWNERS_TTL_MS)
@@ -1370,6 +1501,7 @@ export default {
       owners.at = 0
       endPeek()
       removeStyle()
+      removeWorkingStyle()
       api = null
     })
   }

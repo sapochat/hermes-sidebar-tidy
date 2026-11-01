@@ -260,20 +260,30 @@ const MARKS = `(async () => {
     }
     let dot = null
     for (let el = b.parentElement, i = 0; el && !dot && i < 5; el = el.parentElement, i++) {
-      dot = el.querySelector('.rounded-full[aria-hidden="true"]:not([data-sbt-mark])')
+      dot = el.querySelector('.rounded-full[aria-hidden="true"]:not([data-sbt-mark]), .rounded-full[role="status"]')
     }
     const statusDot = dot ? getComputedStyle(dot).backgroundColor : null
+    const statusBorder = dot ? getComputedStyle(dot).borderTopColor : null
+    const arc = b.closest('[data-working]')?.querySelector(':scope > .arc-border.arc-row')
+    let shine = null
+    if (arc) {
+      const probe = document.createElement('span')
+      probe.style.color = getComputedStyle(arc).getPropertyValue('--arc-c1').trim()
+      document.body.appendChild(probe)
+      shine = getComputedStyle(probe).color
+      probe.remove()
+    }
     const sw = mark && (mark.querySelector('[role="img"]') || mark)
     const r = sw?.getBoundingClientRect()
     return { title: b.textContent.trim(), profile: owner[b.textContent.trim()], titleX: Math.round(b.getBoundingClientRect().left),
              mark: mark?.dataset.sbtMark || null, markProfile: mark?.dataset.sbtProfile || null,
              color: sw && mark.dataset.sbtMark !== 'spacer' ? getComputedStyle(sw).backgroundColor : null,
-             visible: !!r && r.width > 0 && r.height > 0, statusDot }
+             visible: !!r && r.width > 0 && r.height > 0, statusDot, statusBorder, shine }
   })
   const rail = {}
   for (const b of document.querySelectorAll('[data-slot="profile-rail"] button[aria-label]')) {
     const c = getComputedStyle(b).color
-    rail[b.getAttribute('aria-label')] = c
+    rail[b.getAttribute('aria-label').split(',')[0].trim()] = c
   }
   return { rows, rail, profiles: [...new Set(api.sessions.map(s => s.profile || 'default'))] }
 })()`
@@ -338,6 +348,79 @@ if (m.profiles.length < 2 || !named.length) {
     { greyDot, rows: m.rows }
   )
   check('profile marks "Tint": titles keep one left edge', new Set(m.rows.map(r => r.titleX)).size === 1, m.rows)
+
+  // Working sessions: drive Desktop's own state store (dev server: same module
+  // instance) to mark rows working / waiting, in memory only; restored after.
+  const SIM = (on) => `(async () => {
+    const st = await import('/src/store/session-states.ts')
+    const api = await window.hermesDesktop.api({ path: '/api/profiles/sessions?limit=200&offset=0&min_messages=0&archived=exclude&order=recent&profile=all' })
+    const id = t => api.sessions.find(s => s.title === t)?.id
+    const prev = { ...st.$sessionStates.get() }
+    for (const k of Object.keys(prev)) if (k.startsWith('sbt-sim-')) delete prev[k]
+    if (${on}) {
+      prev['sbt-sim-1'] = { busy: true, needsInput: false, storedSessionId: id('Survey GPU rental prices') }
+      prev['sbt-sim-2'] = { busy: true, needsInput: false, storedSessionId: id('Plan weekend hike') }
+      prev['sbt-sim-3'] = { busy: true, needsInput: true, storedSessionId: id('Draft essay on toys') }
+    }
+    st.$sessionStates.set(prev)
+    return true
+  })()`
+  await clickSegment('Session rows', 'Edge')
+  await sleep(500)
+  await evaluate(SIM(true))
+  await sleep(800)
+  const stockRows = (await marks()).rows
+  const by = (rows, t) => rows.find(r => r.title === t) || {}
+  const accentDot = by(stockRows, 'Survey GPU rental prices').statusDot
+  const amber = by(stockRows, 'Draft essay on toys').statusDot
+  const stockShine = by(stockRows, 'Survey GPU rental prices').shine
+  check('working (stock): simulated rows show Desktop\'s accent dot and shine', !!accentDot && !!stockShine && accentDot !== amber, { accentDot, amber, stockShine })
+
+  await clickSegment('Working dot', 'Quiet')
+  await sleep(800)
+  m = await marks()
+  const idleGrey = by(m.rows, 'Fix router DNS').statusDot
+  check(
+    'working dot "Quiet": named-profile working dot takes the profile color',
+    by(m.rows, 'Survey GPU rental prices').statusDot === m.rail.research,
+    { got: by(m.rows, 'Survey GPU rental prices'), rail: m.rail }
+  )
+  check(
+    'working dot "Quiet": default-profile working dot goes idle grey',
+    by(m.rows, 'Plan weekend hike').statusDot === idleGrey && idleGrey !== accentDot,
+    { got: by(m.rows, 'Plan weekend hike'), idleGrey }
+  )
+  check('working dot "Quiet": waiting-for-you dot keeps its amber', by(m.rows, 'Draft essay on toys').statusDot === amber, { got: by(m.rows, 'Draft essay on toys'), amber })
+  check('working dot "Quiet": shine untouched', by(m.rows, 'Survey GPU rental prices').shine === stockShine, by(m.rows, 'Survey GPU rental prices'))
+
+  await clickSegment('Working shine', 'Profile')
+  await sleep(800)
+  m = await marks()
+  check('working shine "Profile": shine takes the profile color', by(m.rows, 'Survey GPU rental prices').shine === m.rail.research, { got: by(m.rows, 'Survey GPU rental prices'), rail: m.rail })
+  check('working shine "Profile": default-profile shine stays stock', by(m.rows, 'Plan weekend hike').shine === stockShine, by(m.rows, 'Plan weekend hike'))
+
+  await clickSegment('Session rows', 'Off')
+  await sleep(800)
+  m = await marks()
+  check(
+    'working overrides work with profile marks Off',
+    by(m.rows, 'Survey GPU rental prices').statusDot === m.rail.research && by(m.rows, 'Survey GPU rental prices').shine === m.rail.research,
+    by(m.rows, 'Survey GPU rental prices')
+  )
+
+  await clickSegment('Working dot', 'Accent')
+  await clickSegment('Working shine', 'Stock')
+  await sleep(800)
+  m = await marks()
+  check(
+    'working: Accent + Stock restores Desktop\'s dot and shine',
+    by(m.rows, 'Survey GPU rental prices').statusDot === accentDot && by(m.rows, 'Survey GPU rental prices').shine === stockShine,
+    by(m.rows, 'Survey GPU rental prices')
+  )
+  await evaluate(SIM(false))
+  await sleep(500)
+  await clickSegment('Session rows', 'Edge')
+  await sleep(500)
 
   const legend = await evaluate(`[...document.querySelectorAll('[data-sbt-legend]')].map(e => e.dataset.sbtLegend)`)
   check('profile marks: settings legend lists the named profiles', named.every(r => legend.includes(r.profile)), legend)
