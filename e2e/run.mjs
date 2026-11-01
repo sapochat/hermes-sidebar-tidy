@@ -93,12 +93,22 @@ const check = (name, ok, detail) => {
 // 0. Baseline: All-profiles sidebar (where profile marks matter), setup card dismissed.
 if ((await evaluate(`localStorage.getItem('hermes.desktop.showAllProfiles')`)) !== 'true') {
   await evaluate(`localStorage.setItem('hermes.desktop.showAllProfiles', 'true'), location.reload()`)
-  await sleep(8000)
+  await sleep(3000)
 }
+// Poll rather than sleep: a fresh instance can take a while to mount the
+// sidebar, show (and re-show) the provider setup card, and register the page.
+async function waitFor(expr, ms = 30000) {
+  for (const end = Date.now() + ms; Date.now() < end; await sleep(400)) {
+    if (await evaluate(expr).catch(() => false)) return true
+  }
+  return false
+}
+await waitFor(`!!document.querySelector('[data-tour="sessions-sidebar"] [data-sessions-mode]')`)
 await evaluate(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === "I'll choose a provider later")?.click()`)
 await sleep(500)
 await evaluate(`location.hash = '#/settings?tab=plugins&plugin=sidebar-tidy'`)
-await sleep(1500)
+await waitFor(`[...document.querySelectorAll('main *')].some(e => e.children.length === 0 && e.textContent.trim() === 'Session rows')`)
+await sleep(500)
 await clickSegment('Pinned', 'Always') // known start
 await sleep(400)
 let s = await snap()
@@ -248,12 +258,17 @@ const MARKS = `(async () => {
     for (let el = b.parentElement, i = 0; el && !mark && i < 5; el = el.parentElement, i++) {
       mark = el.querySelector(':scope > [data-sbt-mark]')
     }
+    let dot = null
+    for (let el = b.parentElement, i = 0; el && !dot && i < 5; el = el.parentElement, i++) {
+      dot = el.querySelector('.rounded-full[aria-hidden="true"]:not([data-sbt-mark])')
+    }
+    const statusDot = dot ? getComputedStyle(dot).backgroundColor : null
     const sw = mark && (mark.querySelector('[role="img"]') || mark)
     const r = sw?.getBoundingClientRect()
     return { title: b.textContent.trim(), profile: owner[b.textContent.trim()], titleX: Math.round(b.getBoundingClientRect().left),
              mark: mark?.dataset.sbtMark || null, markProfile: mark?.dataset.sbtProfile || null,
              color: sw && mark.dataset.sbtMark !== 'spacer' ? getComputedStyle(sw).backgroundColor : null,
-             visible: !!r && r.width > 0 && r.height > 0 }
+             visible: !!r && r.width > 0 && r.height > 0, statusDot }
   })
   const rail = {}
   for (const b of document.querySelectorAll('[data-slot="profile-rail"] button[aria-label]')) {
@@ -263,6 +278,7 @@ const MARKS = `(async () => {
   return { rows, rail, profiles: [...new Set(api.sessions.map(s => s.profile || 'default'))] }
 })()`
 const marks = () => evaluate(MARKS)
+const document_hasDots = m => m.rows.some(r => r.mark === 'dot' || r.mark === 'spacer')
 await evaluate(`localStorage.setItem('hermes.desktop.showAllProfiles', 'true')`)
 await evaluate(`location.hash = '#/settings?tab=plugins&plugin=sidebar-tidy'`)
 await sleep(800)
@@ -306,13 +322,30 @@ if (m.profiles.length < 2 || !named.length) {
   )
   await clickSwitch('Mark default-profile sessions too')
 
+  await clickSegment('Session rows', 'Tint')
+  await sleep(800)
+  m = await marks()
+  const greyDot = m.rows.find(r => r.profile === 'default')?.statusDot
+  check(
+    'profile marks "Tint": named rows recolor the status dot to the rail color, no second dot',
+    m.rows.filter(r => r.profile !== 'default').every(r => r.mark === 'tint' && r.statusDot === m.rail[r.profile]) &&
+      !document_hasDots(m),
+    m.rows
+  )
+  check(
+    'profile marks "Tint": default rows keep Desktop\'s grey dot',
+    m.rows.filter(r => r.profile === 'default').every(r => r.mark === null && r.statusDot && !Object.values(m.rail).includes(r.statusDot)),
+    { greyDot, rows: m.rows }
+  )
+  check('profile marks "Tint": titles keep one left edge', new Set(m.rows.map(r => r.titleX)).size === 1, m.rows)
+
   const legend = await evaluate(`[...document.querySelectorAll('[data-sbt-legend]')].map(e => e.dataset.sbtLegend)`)
   check('profile marks: settings legend lists the named profiles', named.every(r => legend.includes(r.profile)), legend)
 
   await clickSegment('Session rows', 'Off')
   await sleep(600)
   m = await marks()
-  check('profile marks "Off": no marks at all', m.rows.every(r => r.mark === null), m.rows)
+  check('profile marks "Off": no marks at all, status dots back to Desktop\'s own', m.rows.every(r => r.mark === null) && new Set(m.rows.map(r => r.statusDot)).size === 1, m.rows)
   check('profile marks: persisted', (await evaluate(`JSON.parse(localStorage.getItem('${CFG}')).profileMarks.style`)) === 'off')
   await clickSegment('Session rows', 'Edge')
   await sleep(1000)

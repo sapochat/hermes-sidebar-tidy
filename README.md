@@ -15,16 +15,17 @@ It started with a small annoyance: the **Pinned** section shows up even when not
 | **Profile rail** | Shown · Hidden |
 | **Messaging channels** | All on/off, plus a switch per platform (Discord, Telegram, iMessage, …) |
 | **Nav rows** | Show/hide and reorder New session, Messaging, Artifacts, Scheduled jobs, and rows added by other plugins |
-| **Profile marks** | Off · **Edge** (default) · Dot, plus "Mark default-profile sessions too" |
+| **Profile marks** | Off · **Edge** (default) · Dot · Tint, plus "Mark default-profile sessions too" |
 
 **Profile marks** color each session row by the profile that owns it, using the same color as that profile's tile in the profile rail. They matter most with *All profiles* turned on, when sessions from several profiles share one list.
 
 - **Edge** draws a short stripe in the row's left margin. Titles don't move.
 - **Dot** puts a small dot after the status dot. Every row gets the same space, so titles still line up.
+- **Tint** adds nothing: it recolors Desktop's own status dot while a session is idle, so each row keeps one dot. Working, waiting, unread and draft dots keep their usual colors, and so does a session that already has a project or session color.
 - Default-profile sessions are left unmarked unless you turn on *Mark default-profile sessions too*; they then get an outline, like the rail's neutral tile.
-- To change a profile's color, use the rail's color picker. The settings page shows a legend of the profiles in your list.
+- To change a profile's color, right-click its square in the profile rail and choose **Color** (or press and hold the square). The picker isn't available once the rail collapses to a dropdown (more than 13 profiles). The settings page shows a legend of the profiles in your list.
 
-![Edge marks](e2e/profile-marks-edge.png) ![Dot marks](e2e/profile-marks-dot.png)
+![Edge marks](e2e/profile-marks-edge.png) ![Dot marks](e2e/profile-marks-dot.png) ![Tint marks](e2e/profile-marks-tint.png)
 
 **Keyboard only** search stays out of sight until you press the *Focus session search* shortcut (⌘⇧F / Ctrl+Shift+F) or there's a query in it.
 
@@ -34,7 +35,7 @@ It started with a small annoyance: the **Pinned** section shows up even when not
 
 - **Focus mode**: ⌘⌥B / Ctrl+Alt+B, rebindable in Keyboard Shortcuts. Leaves only New session, Pinned (if anything is pinned) and Sessions. Your saved settings stay as they were. A `focus` chip in the status bar shows it's on, and clicking it turns focus mode off.
 - **Peek**: hold ⌥ Option / Alt with the pointer over the sidebar to see hidden parts, faded and outlined.
-- **Command palette**: ⌘K → `Sidebar:` has Customize, Toggle focus mode, Show everything, a profile-marks cycle (Off → Edge → Dot), and quick toggles for Pinned, search, Cron jobs, messaging and the profile rail.
+- **Command palette**: ⌘K → `Sidebar:` has Customize, Toggle focus mode, Show everything, a profile-marks cycle (Off → Edge → Dot → Tint), and quick toggles for Pinned, search, Cron jobs, messaging and the profile rail.
 - **Settings page**: Settings → Plugins → Sidebar Tidy, with a "Show everything" reset and a "Tidy preset" (Pinned when not empty, search keyboard only).
 
 ## Install
@@ -62,7 +63,7 @@ The plugin uses the official SDK wherever there is one, and keeps its own DOM wo
 - **Session sections, search and the profile rail** have no SDK hook yet. The plugin finds them by their stable `data-*` attributes and their (localized) section labels, marks them with `data-sbt-*` attributes, and hides them with one injected stylesheet. A `MutationObserver` scoped to the sidebar keeps the marks current.
 - **Fails open**: anything the plugin can't identify is left visible. If a Desktop update changes the sidebar markup, sections reappear rather than vanish.
 - **"When not empty" for a collapsed Pinned section** reads Desktop's stored pin list, because a collapsed section renders no rows to count.
-- **Profile marks** use the SDK's `sessionRow.leading` slot. That slot passes only a session id, so the plugin reads which profile owns each session from one read-only, all-profiles `host.listPersistedSessions` call. It refreshes the list when a row shows an id it hasn't seen, and leaves rows unmarked if it can't tell. Colors come from the SDK's `profileColor` plus your rail color overrides.
+- **Profile marks** use the SDK's `sessionRow.leading` slot. That slot passes only a session id, so the plugin reads which profile owns each session from one read-only, all-profiles `host.listPersistedSessions` call. It refreshes the list when a row shows an id it hasn't seen, and leaves rows unmarked if it can't tell. Colors come from the SDK's `profileColor` plus your rail color overrides. **Tint** is the exception to "official hooks only": Desktop's status dot has no plugin hook, so a stylesheet rule recolors the idle dot in any row that carries the plugin's (zero-width) tint slot. If a Desktop update changes that markup, the rule matches nothing and the dot stays grey.
 - **Storage**: settings live in the plugin's own `ctx.storage`. The plugin never writes pins, sessions or core settings.
 - **Cleanup**: every listener, timer, observer, mark and the stylesheet are released when the plugin is disabled or reloaded.
 
@@ -77,7 +78,7 @@ The plugin uses the official SDK wherever there is one, and keeps its own DOM wo
 
 `e2e/run.mjs` is an end-to-end test that drives a real, running Hermes Desktop over the Chrome DevTools Protocol. It checks the rendered sidebar after clicking through the plugin's own settings UI. It writes only this plugin's settings and never pins or edits sessions.
 
-It covers each mode of every section, settings persistence, Pinned auto-hide as rows appear and disappear, per-platform and all-messaging hiding, keyboard-only search, nav hide and reorder, the locked Capabilities row, peek, the focus-mode keybind and status chip, the palette commands, profile marks (each style, per-profile color matching the rail, title alignment, the default-profile option, the legend, persistence), "Show everything", and disable/re-enable cleanup.
+It covers each mode of every section, settings persistence, Pinned auto-hide as rows appear and disappear, per-platform and all-messaging hiding, keyboard-only search, nav hide and reorder, the locked Capabilities row, peek, the focus-mode keybind and status chip, the palette commands, profile marks (each style including Tint's recolored status dot, per-profile color matching the rail, title alignment, the default-profile option, the legend, persistence), "Show everything", and disable/re-enable cleanup.
 
 Run it against an **isolated** Desktop instance, never your daily app. `e2e/isolated.sh` builds one: it seeds a fresh Hermes home from `e2e/fixture_sql.py` (six sessions across `default`, `research` and `writing`, plus one paused cron job), copies in `plugin.js`, and redirects `HOME`, `XDG_*` and the gateway lock dir into the scratch folder. Setting only `HERMES_HOME` is not enough: the dev app would find your host's live gateway and real profiles.
 
@@ -97,7 +98,7 @@ node /path/to/hermes-sidebar-tidy/e2e/run.mjs --port 9333 --match 5194 --out res
 
 Set `HERMES_DESKTOP_HERMES_ROOT` to a hermes-agent checkout with its Python venv if the Desktop checkout doesn't have one. The script stops any gateway left over from a previous run in the same scratch folder before reseeding it.
 
-The last recorded run is in [`e2e/results.json`](e2e/results.json): **33/33** on Hermes Desktop `main` at `9a76ac8e4f` (2026-10-31), Electron 44.9.3, Linux under Xvfb. The earlier 1.0.0 run was 26/26 on 0.22.2.
+The last recorded run is in [`e2e/results.json`](e2e/results.json): **36/36** on Hermes Desktop `main` at `9a76ac8e4f` (2026-10-31), Electron 44.9.3, Linux under Xvfb, first run against a freshly seeded instance. The earlier 1.0.0 run was 26/26 on 0.22.2.
 
 ## Compatibility
 

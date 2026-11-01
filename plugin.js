@@ -57,7 +57,7 @@ const CORE_NAV = ['new-session', 'capabilities', 'messaging', 'artifacts', 'cron
 const NEVER_HIDE = new Set(['capabilities'])
 const MARK_ATTRS = ['data-sbt-section', 'data-sbt-hidden', 'data-sbt-search', 'data-sbt-has-value']
 const PROFILE_COLORS_KEY = 'hermes.desktop.profileColors'
-const MARK_STYLES = ['off', 'edge', 'dot']
+const MARK_STYLES = ['off', 'edge', 'dot', 'tint']
 
 const DEFAULT_CONFIG = {
   v: 1,
@@ -72,7 +72,7 @@ const DEFAULT_CONFIG = {
   messaging: {}, // { [platform label]: 'hide' }
   nav: { hide: [], order: [] },
   focus: false,
-  profileMarks: { style: 'edge', includeDefault: false } // style: off | edge | dot
+  profileMarks: { style: 'edge', includeDefault: false } // style: off | edge | dot | tint
 }
 
 const FOCUS_SECTIONS = { pinned: 'auto', search: 'keys', cron: 'hide', profileRail: 'hide' }
@@ -632,6 +632,43 @@ function DotMark({ color, label, profile }) {
   })
 }
 
+/**
+ * Tint: no mark of our own. Desktop's idle status dot is recolored instead, so
+ * a row keeps one dot. Core owns that dot and has no hook for it, so this is
+ * the one DOM-reliant style: the slot (zero width, gap cancelled) puts the
+ * color on its row cluster as --sbt-tint, and a stylesheet rule paints only a
+ * dot that is idle and has no project/session color of its own. Working,
+ * unread and needs-input dots keep their meaning; if core's markup changes
+ * the rule matches nothing and the dot stays grey.
+ */
+function TintMark({ color, label, profile }) {
+  const ref = useRef(null)
+
+  useLayoutEffect(() => {
+    const slot = ref.current
+    const cluster = slot?.parentElement
+
+    if (!slot || !cluster) {
+      return
+    }
+
+    const gap = parseFloat(getComputedStyle(cluster).columnGap) || 0
+    slot.style.marginRight = gap ? `-${gap}px` : '0px'
+    cluster.style.setProperty('--sbt-tint', color)
+
+    return () => cluster.style.removeProperty('--sbt-tint')
+  }, [color])
+
+  return jsx('span', {
+    'aria-label': label,
+    'data-sbt-mark': 'tint',
+    'data-sbt-profile': profile,
+    ref,
+    role: 'img',
+    style: { flexShrink: 0, width: 0, height: 0, overflow: 'hidden' }
+  })
+}
+
 function ProfileMark({ sessionId }) {
   const marks = useValue($config).profileMarks
   const profile = useValue($owners)[sessionId]
@@ -657,6 +694,12 @@ function ProfileMark({ sessionId }) {
 
   if (!shown) {
     return null
+  }
+
+  if (marks.style === 'tint') {
+    const tint = colorForProfile(shown, overrides)
+    // Default has no color: its idle dot is already Desktop's grey.
+    return tint ? jsx(TintMark, { color: tint, label: `${shown} profile`, profile: shown }) : null
   }
 
   return jsx(EdgeMark, { color: colorForProfile(shown, overrides), label: `${shown} profile`, profile: shown })
@@ -694,6 +737,12 @@ html[data-sbt-peek] ${SIDEBAR}:hover [data-sbt-search="keys"] {
   opacity: 1;
   padding-top: 0.25rem !important;
   padding-bottom: 0.25rem !important;
+}
+${SIDEBAR} :has(> [data-sbt-mark="tint"]) > :not([data-sbt-mark]) .size-1.rounded-full[aria-hidden="true"]:not([style*="background"]) {
+  background-color: var(--sbt-tint) !important;
+  width: 0.375rem;
+  height: 0.375rem;
+  margin: -1px;
 }
 `
 
@@ -798,7 +847,8 @@ const BINARY_OPTIONS = [
 const MARK_OPTIONS = [
   { id: 'off', label: 'Off' },
   { id: 'edge', label: 'Edge' },
-  { id: 'dot', label: 'Dot' }
+  { id: 'dot', label: 'Dot' },
+  { id: 'tint', label: 'Tint' }
 ]
 
 /** Every profile the owner listing has seen, with the color its mark uses. */
@@ -832,9 +882,9 @@ function ProfileLegend() {
               style: {
                 ...MARK_BASE,
                 marginRight: '0.375rem',
-                width: marks.style === 'dot' ? '0.5rem' : '3px',
-                height: marks.style === 'dot' ? '0.5rem' : '0.875rem',
-                borderRadius: marks.style === 'dot' ? '999px' : '2px',
+                width: marks.style === 'edge' ? '3px' : '0.5rem',
+                height: marks.style === 'edge' ? '0.875rem' : '0.5rem',
+                borderRadius: marks.style === 'edge' ? '2px' : '999px',
                 ...swatchPaint(color)
               }
             }),
@@ -980,7 +1030,7 @@ function SettingsPage() {
         ? jsx(SectionRow, {
             title: 'Session rows',
             description:
-              'Color each session by its profile, matching the profile rail. Edge is a stripe in the row\'s left margin and never moves the title; Dot sits after the status dot and indents every row slightly. Change a color from the rail\'s color picker.',
+              'Color each session by its profile, matching the profile rail. Edge is a stripe in the row\'s left margin and never moves the title; Dot sits after the status dot and indents every row slightly; Tint recolors the status dot itself while a session is idle (working, unread and waiting dots keep their own colors, and so do sessions with a project color). Change a profile\'s color by right-clicking its square in the rail → Color.',
             value: cfg.profileMarks.style,
             options: MARK_OPTIONS,
             onChange: v => setMarks({ style: v })
@@ -992,8 +1042,11 @@ function SettingsPage() {
       marksSupported() &&
         jsx(ToggleRow, {
           checked: cfg.profileMarks.includeDefault,
-          description: 'The default profile has no color, so it gets an outline.',
-          disabled: cfg.profileMarks.style === 'off',
+          description:
+            cfg.profileMarks.style === 'tint'
+              ? 'Not used by Tint: default sessions already have Desktop\'s grey dot.'
+              : 'The default profile has no color, so it gets an outline.',
+          disabled: cfg.profileMarks.style === 'off' || cfg.profileMarks.style === 'tint',
           label: 'Mark default-profile sessions too',
           onChange: on => setMarks({ includeDefault: on })
         }),
@@ -1083,7 +1136,7 @@ const PINNED_CYCLE = { show: 'auto', auto: 'hide', hide: 'show' }
 const PINNED_NAMES = { show: 'always', auto: 'when not empty', hide: 'hidden' }
 const SEARCH_CYCLE = { show: 'keys', keys: 'hide', hide: 'show' }
 const SEARCH_NAMES = { show: 'shown', keys: 'keyboard only', hide: 'hidden' }
-const MARK_CYCLE = { off: 'edge', edge: 'dot', dot: 'off' }
+const MARK_CYCLE = { off: 'edge', edge: 'dot', dot: 'tint', tint: 'off' }
 
 function paletteRows() {
   const flip = key => () => setSection(key, $config.get().sections[key] === 'hide' ? 'show' : 'hide')

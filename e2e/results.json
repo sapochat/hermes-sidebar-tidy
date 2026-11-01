@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-01T03:51:15.594Z",
-  "pass": 33,
-  "total": 33,
+  "at": "2026-11-01T04:09:33.130Z",
+  "pass": 36,
+  "total": 36,
   "env": {
     "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Hermes/0.0.0 Chrome/152.0.7977.167 Electron/44.9.3 Safari/537.36",
     "url": "http://127.0.0.1:5194/#/capabilities?tab=plugins"
@@ -207,7 +207,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Fix router DNS",
@@ -216,7 +217,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Survey GPU rental prices",
@@ -225,7 +227,8 @@
           "mark": "edge",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Compare vector DBs",
@@ -234,7 +237,8 @@
           "mark": "edge",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Draft essay on toys",
@@ -243,7 +247,8 @@
           "mark": "edge",
           "markProfile": "writing",
           "color": "rgb(221, 104, 75)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         }
       ]
     },
@@ -259,7 +264,8 @@
             "mark": null,
             "markProfile": null,
             "color": null,
-            "visible": false
+            "visible": false,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
           },
           {
             "title": "Fix router DNS",
@@ -268,7 +274,8 @@
             "mark": null,
             "markProfile": null,
             "color": null,
-            "visible": false
+            "visible": false,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
           },
           {
             "title": "Survey GPU rental prices",
@@ -277,7 +284,8 @@
             "mark": "edge",
             "markProfile": "research",
             "color": "rgb(75, 221, 121)",
-            "visible": true
+            "visible": true,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
           },
           {
             "title": "Compare vector DBs",
@@ -286,7 +294,8 @@
             "mark": "edge",
             "markProfile": "research",
             "color": "rgb(75, 221, 121)",
-            "visible": true
+            "visible": true,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
           },
           {
             "title": "Draft essay on toys",
@@ -295,7 +304,8 @@
             "mark": "edge",
             "markProfile": "writing",
             "color": "rgb(221, 104, 75)",
-            "visible": true
+            "visible": true,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
           }
         ],
         "rail": {
@@ -320,7 +330,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Fix router DNS",
@@ -329,7 +340,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Survey GPU rental prices",
@@ -338,7 +350,8 @@
           "mark": "edge",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Compare vector DBs",
@@ -347,7 +360,8 @@
           "mark": "edge",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Draft essay on toys",
@@ -356,7 +370,8 @@
           "mark": "edge",
           "markProfile": "writing",
           "color": "rgb(221, 104, 75)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         }
       ]
     },
@@ -371,7 +386,8 @@
           "mark": "spacer",
           "markProfile": null,
           "color": null,
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Fix router DNS",
@@ -380,7 +396,8 @@
           "mark": "spacer",
           "markProfile": null,
           "color": null,
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Survey GPU rental prices",
@@ -389,7 +406,8 @@
           "mark": "dot",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Compare vector DBs",
@@ -398,7 +416,8 @@
           "mark": "dot",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Draft essay on toys",
@@ -407,7 +426,8 @@
           "mark": "dot",
           "markProfile": "writing",
           "color": "rgb(221, 104, 75)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         }
       ]
     },
@@ -422,7 +442,8 @@
           "mark": "spacer",
           "markProfile": null,
           "color": null,
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Fix router DNS",
@@ -431,7 +452,8 @@
           "mark": "spacer",
           "markProfile": null,
           "color": null,
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Survey GPU rental prices",
@@ -440,7 +462,8 @@
           "mark": "dot",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Compare vector DBs",
@@ -449,7 +472,8 @@
           "mark": "dot",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Draft essay on toys",
@@ -458,7 +482,8 @@
           "mark": "dot",
           "markProfile": "writing",
           "color": "rgb(221, 104, 75)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         }
       ]
     },
@@ -473,7 +498,8 @@
           "mark": "dot",
           "markProfile": "default",
           "color": "rgba(0, 0, 0, 0)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Fix router DNS",
@@ -482,7 +508,8 @@
           "mark": "dot",
           "markProfile": "default",
           "color": "rgba(0, 0, 0, 0)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Survey GPU rental prices",
@@ -491,7 +518,8 @@
           "mark": "dot",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Compare vector DBs",
@@ -500,7 +528,8 @@
           "mark": "dot",
           "markProfile": "research",
           "color": "rgb(75, 221, 121)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Draft essay on toys",
@@ -509,7 +538,179 @@
           "mark": "dot",
           "markProfile": "writing",
           "color": "rgb(221, 104, 75)",
-          "visible": true
+          "visible": true,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+        }
+      ]
+    },
+    {
+      "name": "profile marks \"Tint\": named rows recolor the status dot to the rail color, no second dot",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "tint",
+          "markProfile": "research",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": false,
+          "statusDot": "rgb(75, 221, 121)"
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "tint",
+          "markProfile": "research",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": false,
+          "statusDot": "rgb(75, 221, 121)"
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 38,
+          "mark": "tint",
+          "markProfile": "writing",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": false,
+          "statusDot": "rgb(221, 104, 75)"
+        }
+      ]
+    },
+    {
+      "name": "profile marks \"Tint\": default rows keep Desktop's grey dot",
+      "ok": true,
+      "detail": {
+        "greyDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)",
+        "rows": [
+          {
+            "title": "Plan weekend hike",
+            "profile": "default",
+            "titleX": 38,
+            "mark": null,
+            "markProfile": null,
+            "color": null,
+            "visible": false,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+          },
+          {
+            "title": "Fix router DNS",
+            "profile": "default",
+            "titleX": 38,
+            "mark": null,
+            "markProfile": null,
+            "color": null,
+            "visible": false,
+            "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+          },
+          {
+            "title": "Survey GPU rental prices",
+            "profile": "research",
+            "titleX": 38,
+            "mark": "tint",
+            "markProfile": "research",
+            "color": "rgba(0, 0, 0, 0)",
+            "visible": false,
+            "statusDot": "rgb(75, 221, 121)"
+          },
+          {
+            "title": "Compare vector DBs",
+            "profile": "research",
+            "titleX": 38,
+            "mark": "tint",
+            "markProfile": "research",
+            "color": "rgba(0, 0, 0, 0)",
+            "visible": false,
+            "statusDot": "rgb(75, 221, 121)"
+          },
+          {
+            "title": "Draft essay on toys",
+            "profile": "writing",
+            "titleX": 38,
+            "mark": "tint",
+            "markProfile": "writing",
+            "color": "rgba(0, 0, 0, 0)",
+            "visible": false,
+            "statusDot": "rgb(221, 104, 75)"
+          }
+        ]
+      }
+    },
+    {
+      "name": "profile marks \"Tint\": titles keep one left edge",
+      "ok": true,
+      "detail": [
+        {
+          "title": "Plan weekend hike",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+        },
+        {
+          "title": "Fix router DNS",
+          "profile": "default",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
+        },
+        {
+          "title": "Survey GPU rental prices",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "tint",
+          "markProfile": "research",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": false,
+          "statusDot": "rgb(75, 221, 121)"
+        },
+        {
+          "title": "Compare vector DBs",
+          "profile": "research",
+          "titleX": 38,
+          "mark": "tint",
+          "markProfile": "research",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": false,
+          "statusDot": "rgb(75, 221, 121)"
+        },
+        {
+          "title": "Draft essay on toys",
+          "profile": "writing",
+          "titleX": 38,
+          "mark": "tint",
+          "markProfile": "writing",
+          "color": "rgba(0, 0, 0, 0)",
+          "visible": false,
+          "statusDot": "rgb(221, 104, 75)"
         }
       ]
     },
@@ -522,7 +723,7 @@
       ]
     },
     {
-      "name": "profile marks \"Off\": no marks at all",
+      "name": "profile marks \"Off\": no marks at all, status dots back to Desktop's own",
       "ok": true,
       "detail": [
         {
@@ -532,7 +733,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Fix router DNS",
@@ -541,7 +743,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Survey GPU rental prices",
@@ -550,7 +753,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Compare vector DBs",
@@ -559,7 +763,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         },
         {
           "title": "Draft essay on toys",
@@ -568,7 +773,8 @@
           "mark": null,
           "markProfile": null,
           "color": null,
-          "visible": false
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)"
         }
       ]
     },
