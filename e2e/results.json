@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-01T04:24:08.171Z",
-  "pass": 45,
-  "total": 45,
+  "at": "2026-11-01T05:13:26.076Z",
+  "pass": 47,
+  "total": 47,
   "env": {
     "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Hermes/0.0.0 Chrome/152.0.7977.167 Electron/44.9.3 Safari/537.36",
     "url": "http://127.0.0.1:5194/#/capabilities?tab=plugins"
@@ -970,6 +970,28 @@
       }
     },
     {
+      "name": "new session: row shows before the backend has it, unmarked",
+      "ok": true,
+      "detail": {
+        "row": true,
+        "mark": null,
+        "color": null
+      }
+    },
+    {
+      "name": "new session: profile mark appears on its own once the session is saved (no reload)",
+      "ok": true,
+      "detail": {
+        "after": {
+          "row": true,
+          "mark": "edge",
+          "color": "rgb(75, 221, 121)"
+        },
+        "waitedMs": 1510,
+        "rail": "rgb(75, 221, 121)"
+      }
+    },
+    {
       "name": "profile marks: settings legend lists the named profiles",
       "ok": true,
       "detail": [
@@ -981,6 +1003,18 @@
       "name": "profile marks \"Off\": no marks at all, status dots back to Desktop's own",
       "ok": true,
       "detail": [
+        {
+          "title": "Brand new research chat",
+          "profile": "research",
+          "titleX": 38,
+          "mark": null,
+          "markProfile": null,
+          "color": null,
+          "visible": false,
+          "statusDot": "color(srgb 0.121569 0.137255 0.156863 / 0.36)",
+          "statusBorder": "rgb(208, 215, 222)",
+          "shine": null
+        },
         {
           "title": "Plan weekend hike",
           "profile": "default",
@@ -1106,7 +1140,7 @@
         "profileMarks": 0,
         "via": "plugins-store setPluginEnabled",
         "reenabled": true,
-        "profileMarksBack": 3
+        "profileMarksBack": 4
       }
     }
   ]

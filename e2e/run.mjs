@@ -1,8 +1,11 @@
 // Sidebar Tidy E2E: drives a running Hermes Desktop over CDP and checks the
 // real rendered sidebar. Writes only plugin config (renderer localStorage of
-// the instance under test) — never pins, never touches sessions.
+// the instance under test) — never pins. With --home (the isolated fixture
+// HERMES_HOME) it also adds one session to the fixture's research profile to
+// test a brand-new chat; never point --home at a real Hermes home.
 //
-//   node run.mjs [--port 9333] [--match 5194] [--out results.json]
+//   node run.mjs [--port 9333] [--match 5194] [--out results.json] [--home <fixture HERMES_HOME>]
+import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 
 const arg = (name, fallback) => {
@@ -11,6 +14,7 @@ const arg = (name, fallback) => {
 }
 const port = Number(arg('port', 9333))
 const match = arg('match', '')
+const HOME_DIR = arg('home', '')
 const out = arg('out', new URL('./results.json', import.meta.url).pathname)
 
 const targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()
@@ -421,6 +425,53 @@ if (m.profiles.length < 2 || !named.length) {
   await sleep(500)
   await clickSegment('Session rows', 'Edge')
   await sleep(500)
+
+  // A brand-new session: the row appears before the backend has written it
+  // (exactly what launching a chat does), so the first ownership lookup misses.
+  // The mark must arrive on its own — no reload. Needs --home (the isolated
+  // HERMES_HOME) so the runner can persist the session mid-test.
+  if (HOME_DIR) {
+    await clickSegment('Session rows', 'Edge')
+    await sleep(500)
+    await evaluate(`(async () => {
+      const s = await import('/src/store/session.ts')
+      const rows = s.$sessions.get()
+      const base = rows.find(r => r.profile === 'research') || rows[0]
+      const now = Date.now() / 1000
+      s.$sessions.set([{ ...base, id: 'sbt-new-0', _lineage_root_id: undefined, _lineage_ids: undefined,
+        title: 'Brand new research chat', profile: 'research', started_at: now, last_active: now, message_count: 0, preview: '' }, ...rows])
+      return true
+    })()`)
+    await sleep(1500)
+    const NEW = `(async () => {
+      const b = [...document.querySelectorAll('[data-tour="sessions-sidebar"] [data-sessions-mode] button')].find(b => b.textContent.trim() === 'Brand new research chat')
+      let mark = null
+      for (let el = b?.parentElement, i = 0; el && !mark && i < 5; el = el.parentElement, i++) mark = el.querySelector(':scope > [data-sbt-mark]')
+      const sw = mark && (mark.querySelector('[role="img"]') || mark)
+      return { row: !!b, mark: mark?.dataset.sbtMark || null, color: sw ? getComputedStyle(sw).backgroundColor : null }
+    })()`
+    const before = await evaluate(NEW)
+    const t = (Date.now() / 1000).toFixed(3)
+    execFileSync('python3', ['-c', `import sqlite3,sys
+db=sqlite3.connect(sys.argv[1]); t=float(sys.argv[2])
+db.execute("INSERT INTO sessions (id, source, model, started_at, message_count, title, last_activity_at, profile_name) VALUES ('sbt-new-0','desktop','fixture-model',?,0,'Brand new research chat',?,'research')",(t,t))
+db.commit()`, `${HOME_DIR}/profiles/research/state.db`, t])
+    const persistedAt = Date.now()
+    let after = before
+    while (Date.now() - persistedAt < 20000) {
+      after = await evaluate(NEW)
+      if (after.mark === 'edge') break
+      await sleep(250)
+    }
+    const waited = Date.now() - persistedAt
+    m = await marks()
+    check('new session: row shows before the backend has it, unmarked', before.row && before.mark === null, before)
+    check(
+      'new session: profile mark appears on its own once the session is saved (no reload)',
+      after.mark === 'edge' && after.color === m.rail.research && waited < 20000,
+      { after, waitedMs: waited, rail: m.rail.research }
+    )
+  }
 
   const legend = await evaluate(`[...document.querySelectorAll('[data-sbt-legend]')].map(e => e.dataset.sbtLegend)`)
   check('profile marks: settings legend lists the named profiles', named.every(r => legend.includes(r.profile)), legend)

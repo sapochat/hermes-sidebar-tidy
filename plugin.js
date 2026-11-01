@@ -544,6 +544,8 @@ function refreshOwners({ force = false } = {}) {
       if (changed) {
         $owners.set(next)
       }
+
+      dropFound(next)
     })
     .catch(error => console.warn('[sidebar-tidy] could not read session owners; profile marks paused', error))
     .finally(() => {
@@ -551,6 +553,92 @@ function refreshOwners({ force = false } = {}) {
         owners.inflight = false
       }
     })
+}
+
+// A brand-new session's row mounts before the backend has written it, so the
+// first listing usually misses it (and a listing already in flight predates it
+// entirely). Unknown ids are chased with a short backoff until they resolve;
+// the slow interval is only the backstop for everything else.
+const CHASE_DELAYS_MS = [800, 2000, 4000, 8000, 15000, 30000]
+const missing = new Set()
+const chase = { timer: 0, step: 0 }
+
+function noteMissing(sessionId) {
+  if (!sessionId || $owners.get()[sessionId]) {
+    return
+  }
+
+  const fresh = !missing.has(sessionId)
+  missing.add(sessionId)
+
+  if (fresh) {
+    chase.step = 0 // a new unknown restarts the fast end of the backoff
+    scheduleChase()
+  }
+}
+
+function scheduleChase() {
+  clearTimeout(chase.timer)
+
+  if (!missing.size || chase.step >= CHASE_DELAYS_MS.length) {
+    chase.timer = 0
+    return
+  }
+
+  chase.timer = setTimeout(() => {
+    chase.step += 1
+
+    if (owners.inflight) {
+      chase.step -= 1 // don't burn a step on a listing that predates the row
+    } else {
+      refreshOwners({ force: true })
+    }
+
+    scheduleChase()
+  }, CHASE_DELAYS_MS[chase.step])
+}
+
+function dropFound(found) {
+  for (const id of missing) {
+    if (found[id]) {
+      missing.delete(id)
+    }
+  }
+
+  if (!missing.size) {
+    clearTimeout(chase.timer)
+    chase.timer = 0
+  }
+}
+
+function stopChase() {
+  clearTimeout(chase.timer)
+  chase.timer = 0
+  chase.step = 0
+  missing.clear()
+}
+
+// The session you just opened is the focused one, and Desktop already knows
+// its owner (row stamp / owner hint) — no listing needed. Null means
+// unresolved or ambiguous; skip it rather than guess.
+function learnFocusedOwner() {
+  const id = host.state?.focusedStoredSessionId?.get?.()
+  const owner = host.state?.focusedSessionOwner?.get?.()
+
+  if (typeof id !== 'string' || !id || !owner?.profile || $owners.get()[id]) {
+    return
+  }
+
+  $owners.set({ ...$owners.get(), [id]: profileKey(owner.profile) })
+  dropFound($owners.get())
+}
+
+function watchFocusedOwner() {
+  const atoms = [host.state?.focusedStoredSessionId, host.state?.focusedSessionOwner].filter(a => typeof a?.listen === 'function')
+  learnFocusedOwner()
+  const stops = atoms.map(a => a.listen(() => learnFocusedOwner()))
+
+  return () => stops.forEach(stop => stop())
 }
 
 const MARK_BASE = {
@@ -687,7 +775,7 @@ function ProfileMark({ sessionId }) {
   // An id we haven't seen is a session newer than the last listing.
   useEffect(() => {
     if (active && !profile) {
-      refreshOwners()
+      noteMissing(sessionId)
     }
   }, [active, profile, sessionId])
 
@@ -1427,6 +1515,8 @@ export default {
 
     if (marksSupported()) {
       refreshOwners({ force: true })
+      ctx.onDispose(watchFocusedOwner())
+      ctx.onDispose(stopChase)
       ctx.setInterval(() => {
         if (marksActive()) {
           refreshOwners({ force: true })

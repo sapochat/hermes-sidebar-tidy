@@ -96,12 +96,13 @@ npx vite --host 127.0.0.1 --port 5194 --strictPort &
 # any freshly initialised Hermes state.db works as the schema template
 /path/to/hermes-sidebar-tidy/e2e/isolated.sh "$PWD/../.." /path/to/template/state.db /tmp/sbt-run &
 sleep 60
-node /path/to/hermes-sidebar-tidy/e2e/run.mjs --port 9333 --match 5194 --out results.json
+# --home lets the new-session test add one chat to the fixture (never a real home)
+node /path/to/hermes-sidebar-tidy/e2e/run.mjs --port 9333 --match 5194 --home /tmp/sbt-run/home --out results.json
 ```
 
 Set `HERMES_DESKTOP_HERMES_ROOT` to a hermes-agent checkout with its Python venv if the Desktop checkout doesn't have one. The script stops any gateway left over from a previous run in the same scratch folder before reseeding it.
 
-The last recorded run is in [`e2e/results.json`](e2e/results.json): **45/45** on Hermes Desktop `main` at `9a76ac8e4f` (2026-10-31), Electron 44.9.3, Linux under Xvfb, first run against a freshly seeded instance. The earlier 1.0.0 run was 26/26 on 0.22.2.
+The last recorded run is in [`e2e/results.json`](e2e/results.json): **47/47** on Hermes Desktop `main` at `9a76ac8e4f` (2026-10-31), Electron 44.9.3, Linux under Xvfb, first run against a freshly seeded instance. The earlier 1.0.0 run was 26/26 on 0.22.2.
 
 ## Compatibility
 
